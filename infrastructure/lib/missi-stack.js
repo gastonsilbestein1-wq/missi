@@ -252,18 +252,18 @@ export class MissiStack extends cdk.Stack {
                 return { statusCode: 200, body: 'Invalidation created' };
               };
             `),
-            timeout: cdk.Duration.minutes(1)
+            timeout: cdk.Duration.minutes(1),
+            initialPolicy: [
+              new iam.PolicyStatement({
+                actions: ['cloudfront:CreateInvalidation'],
+                resources: [`arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`]
+              })
+            ]
           }),
           runOrder: 2
         })
       ]
     });
-
-    // Permisos para invalidación de CloudFront
-    pipeline.role.addToPrincipalPolicy(new iam.PolicyStatement({
-      actions: ['cloudfront:CreateInvalidation'],
-      resources: [`arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`]
-    }));
 
     // ====================
     // OUTPUTS
