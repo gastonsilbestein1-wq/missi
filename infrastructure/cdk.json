@@ -1,0 +1,6 @@
+{
+  "app": "node lib/missi-stack.js",
+  "context": {
+    "@aws-cdk/core:stackRelativeExports": true
+  }
+}

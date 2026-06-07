@@ -1,0 +1,162 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  background: #FFFFFF;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.app {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.missi-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 60px;
+}
+
+.ojos {
+  display: flex;
+  gap: 80px;
+}
+
+.ojo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #87CEEB;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ojo.cerrado {
+  height: 8px;
+  border-radius: 4px;
+  background: #1E90FF;
+}
+
+.ojo.triste {
+  background: #B0C4DE;
+}
+
+.boca {
+  width: 100px;
+  height: 50px;
+  border-bottom: 4px solid #1E90FF;
+  border-radius: 0 0 50px 50px;
+  transition: transform 0.1s ease;
+}
+
+.boca.hablando {
+  animation: hablar 0.3s infinite alternate;
+}
+
+.boca.triste {
+  border-bottom: none;
+  border-top: 4px solid #1E90FF;
+  border-radius: 50px 50px 0 0;
+  transform: translateY(-20px);
+}
+
+@keyframes hablar {
+  0% { 
+    transform: scaleY(0.8);
+  }
+  50% { 
+    transform: scaleY(1.2);
+  }
+  100% { 
+    transform: scaleY(0.8);
+  }
+}
+
+.error-message {
+  position: absolute;
+  bottom: 80px;
+  text-align: center;
+  color: #666;
+  font-size: 16px;
+  max-width: 80%;
+  line-height: 1.5;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .ojos {
+    gap: 60px;
+  }
+  
+  .ojo {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .ojo.cerrado {
+    height: 6px;
+  }
+  
+  .boca {
+    width: 75px;
+    height: 40px;
+    border-bottom-width: 3px;
+  }
+
+  .error-message {
+    font-size: 14px;
+    bottom: 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  .missi-face {
+    gap: 40px;
+  }
+
+  .ojos {
+    gap: 50px;
+  }
+  
+  .ojo {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .ojo.cerrado {
+    height: 5px;
+  }
+  
+  .boca {
+    width: 60px;
+    height: 30px;
+  }
+
+  .error-message {
+    font-size: 13px;
+    bottom: 40px;
+  }
+}
+
+/* Accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+  .ojo,
+  .boca {
+    transition: none;
+  }
+  
+  .boca.hablando {
+    animation: none;
+  }
+}

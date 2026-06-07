@@ -1,0 +1,11 @@
+{
+  "name": "missi-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.600.0"
+  }
+}
