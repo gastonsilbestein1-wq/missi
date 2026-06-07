@@ -1,10 +1,10 @@
-import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
-import { construirPrompt } from './promptBuilder.js';
+const { BedrockRuntimeClient, ConverseCommand } = require('@aws-sdk/client-bedrock-runtime');
+const { construirPrompt } = require('./promptBuilder.js');
 
 const client = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' });
 const MODEL_ID = 'us.amazon.nova-lite-v1:0';
 
-export async function procesarConversacion(mensaje, sensores, historial, preguntaNumero) {
+async function procesarConversacion(mensaje, sensores, historial, preguntaNumero) {
   const prompt = construirPrompt(mensaje, sensores, historial, preguntaNumero);
 
   console.log('Enviando a Bedrock con modelo:', MODEL_ID);
@@ -38,3 +38,5 @@ export async function procesarConversacion(mensaje, sensores, historial, pregunt
     throw error;
   }
 }
+
+module.exports = { procesarConversacion };

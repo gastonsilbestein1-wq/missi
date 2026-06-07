@@ -1,4 +1,4 @@
-export function construirPrompt(mensaje, sensores, historial, preguntaNumero) {
+function construirPrompt(mensaje, sensores, historial, preguntaNumero) {
   const historialTexto = historial
     .map(h => `${h.rol === 'usuario' ? 'Paciente' : 'Missi'}: ${h.texto}`)
     .join('\n');
@@ -47,3 +47,5 @@ Paciente: ${mensaje}
 Respondé de forma natural y concisa (máximo 2 oraciones).
 `.trim();
 }
+
+module.exports = { construirPrompt };

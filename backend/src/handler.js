@@ -1,6 +1,6 @@
-import { procesarConversacion } from './bedrockService.js';
+const { procesarConversacion } = require('./bedrockService.js');
 
-export const handler = async (event) => {
+exports.handler = async (event) => {
   console.log('Event recibido:', JSON.stringify(event, null, 2));
 
   try {
