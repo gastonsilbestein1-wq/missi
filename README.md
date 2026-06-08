@@ -2,9 +2,18 @@
 
 Prueba de concepto de una enfermera virtual potenciada por IA que realiza triage médico mediante conversación por voz.
 
-![Status](https://img.shields.io/badge/status-POC-yellow)
+![Status](https://img.shields.io/badge/status-ARCHIVED-red)
 ![AWS](https://img.shields.io/badge/AWS-Bedrock-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
+
+**⚠️ PROYECTO ARCHIVADO**: La infraestructura de AWS fue eliminada el 8 de junio de 2026. El código está preservado y puede ser re-desplegado.
+
+## 📊 Resumen del Proyecto
+
+- **Costo total**: $0.00 USD (100% Free Tier)
+- **Duración**: 1-8 de junio de 2026
+- **Estado**: Infraestructura eliminada, código preservado
+- **Documentación completa**: Ver [TEARDOWN-COMPLETE.md](./TEARDOWN-COMPLETE.md)
 
 ## 🎯 Descripción
 
