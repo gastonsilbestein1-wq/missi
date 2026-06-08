@@ -2,7 +2,7 @@ const { BedrockRuntimeClient, ConverseCommand } = require('@aws-sdk/client-bedro
 const { construirPrompt } = require('./promptBuilder.js');
 
 const client = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' });
-const MODEL_ID = 'us.amazon.nova-lite-v1:0';
+const MODEL_ID = 'amazon.nova-lite-v1:0';
 
 async function procesarConversacion(mensaje, sensores, historial, preguntaNumero) {
   const prompt = construirPrompt(mensaje, sensores, historial, preguntaNumero);

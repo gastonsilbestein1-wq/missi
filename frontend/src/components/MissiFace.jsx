@@ -55,10 +55,14 @@ function MissiFace({ hablando, escuchando, error }) {
           className={`ojo ${error ? 'triste' : ''}`}
         ></div>
       </div>
-      <div 
-        ref={bocaRef} 
-        className={`boca ${error ? 'triste' : ''}`}
-      ></div>
+      <div className={`boca-container ${hablando ? 'hablando' : ''}`}>
+        <div 
+          ref={bocaRef} 
+          className={`boca ${error ? 'triste' : ''}`}
+        ></div>
+        <div className="boca-punta-izq"></div>
+        <div className="boca-punta-der"></div>
+      </div>
     </div>
   );
 }

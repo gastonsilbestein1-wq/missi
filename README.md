@@ -8,29 +8,41 @@ Prueba de concepto de una enfermera virtual potenciada por IA que realiza triage
 
 ## 🎯 Descripción
 
-Missi es una enfermera virtual argentina con personalidad cálida y amable que:
+Missi es una enfermera virtual argentina con personalidad cálida y amable que trabaja en la guardia de un sanatorio y:
 - 🎤 Interactúa por voz usando la Web Speech API del navegador (100% gratis)
-- 🏥 Realiza triage médico básico (5-6 preguntas máximo)
+- 🏥 Realiza triage médico básico en la guardia (5-6 preguntas máximo)
 - 📊 Simula lectura de sensores (temperatura, ritmo cardíaco, oxígeno, presión)
-- 👨‍⚕️ Deriva a médico clínico para dolencias simples o a especialista para casos graves
+- 👨‍⚕️ Deriva a médicos clínicos o especialistas **dentro del mismo sanatorio**
+- 💊 Da consejos de autocuidado para casos simples
 - 🚫 Solo responde preguntas relacionadas con salud
-- 🇦🇷 Habla español argentino con voz femenina cálida
+- 🇦🇷 Habla español argentino natural con voz femenina cálida
 
 ## ✨ Demo
 
 La interfaz es ultra-minimalista: solo una cara animada (ojos + boca) sobre fondo blanco. Sin botones, sin texto, completamente controlada por voz.
 
 ```
-        ⚪    ⚪
-       (ojos)
-       
-          ⌣
-        (boca)
+     ⬭  ⬭
+   (ojos grandes)
+  ovalados azules
+   
+   
+    ⌣⌣⌣⌣⌣⌣⌣
+   (sonrisa feliz)
+  muy pronunciada
 ```
+
+**Características visuales:**
+- Todo del mismo color azul medio (#1E90FF)
+- Ojos ovalados verticales grandes (192x256px)
+- Boca: arco ancho y sutil (800px diámetro, 30% visible) con puntas redondeadas
+- Grosor uniforme de 40px
+- Diseño minimalista y expresivo
 
 **Animaciones:**
 - Ojos pestañean automáticamente cada 3-5 segundos
-- Boca se anima cuando Missi habla
+- Boca: vibración vertical suave al hablar
+- Transición fluida y natural
 - Interfaz 100% manos libres
 
 ## 🏗️ Arquitectura
@@ -159,8 +171,20 @@ Missi: "¿El dolor es constante o viene y va?"
 Usuario: "Constante"
 
 Missi: "Parece ser una cefalea tensional. Tomá un ibuprofeno de 400mg
-       y descansá en un lugar tranquilo. Si sigue mañana, andá al 
-       médico clínico."
+       y descansá en un lugar tranquilo. Si sigue, pasá por consultorio
+       para que el médico clínico te vea."
+```
+
+**Ejemplo de caso grave:**
+
+```
+Usuario: "Me duele el pecho y me cuesta respirar"
+
+Missi: [Hace 2-3 preguntas rápidas]
+
+Missi: "Tu presión está alta y tenés dolor de pecho. Te derivo AHORA 
+       con el cardiólogo del sanatorio. Andá a la sala de emergencias 
+       en el primer piso."
 ```
 
 ## 🛠️ Stack Tecnológico
@@ -184,9 +208,10 @@ Missi: "Parece ser una cefalea tensional. Tomá un ibuprofeno de 400mg
 
 Después de desplegar, probar estos escenarios:
 
-1. **Conversación simple** (cefalea) → Autocuidado
-2. **Emergencia** (dolor de pecho) → Derivación urgente
-3. **Fuera de contexto** (preguntas no médicas) → Rechazo amable
+1. **Conversación simple** (cefalea) → Autocuidado + farmacia del sanatorio
+2. **Emergencia** (dolor de pecho) → Derivación urgente a cardiólogo del sanatorio
+3. **Caso moderado** (fiebre alta) → Derivación a médico clínico del sanatorio
+4. **Fuera de contexto** (preguntas no médicas) → Rechazo amable
 
 Ver [TESTING.md](./TESTING.md) para casos de prueba completos.
 

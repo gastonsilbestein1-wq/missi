@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script de deployment automatizado para Missi
+# Script de deployment manual simplificado para Missi
 # Uso: ./deploy.sh
 
 set -e
@@ -11,118 +11,88 @@ echo ""
 # Colores
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
-RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Paso 1: Verificar AWS CLI
-echo -e "${BLUE}[1/8]${NC} Verificando AWS CLI..."
-if ! command -v aws &> /dev/null; then
-    echo -e "${RED}❌ AWS CLI no está instalado${NC}"
-    echo "Instalar desde: https://aws.amazon.com/cli/"
-    exit 1
+# Configuración
+API_URL="https://hfhgnw26t1.execute-api.us-east-1.amazonaws.com/prod/"
+BUCKET_NAME="missistack-missifrontend081edd7f-sqglaufxsx4u"
+DISTRIBUTION_ID="E17MSYUHBCY3OL"
+LAMBDA_NAME="MissiStack-MissiBackend91814226-LcbOaNw7a7Xt"
+
+# Paso 1: Deploy Backend (si hay cambios)
+if [ "$1" == "backend" ] || [ "$1" == "all" ]; then
+    echo -e "${BLUE}[1/4]${NC} Desplegando Backend..."
+    cd backend/src
+    zip -q -r /tmp/lambda-code.zip .
+    aws lambda update-function-code \
+        --function-name $LAMBDA_NAME \
+        --zip-file fileb:///tmp/lambda-code.zip \
+        --query 'LastModified' \
+        --output text > /dev/null
+    echo -e "${GREEN}✅ Backend desplegado${NC}"
+    cd ../..
+    echo ""
 fi
-echo -e "${GREEN}✅ AWS CLI encontrado${NC}"
-echo ""
 
-# Paso 2: Verificar CDK
-echo -e "${BLUE}[2/8]${NC} Verificando AWS CDK..."
-if ! command -v cdk &> /dev/null; then
-    echo -e "${YELLOW}⚠️  CDK no encontrado, instalando globalmente...${NC}"
-    npm install -g aws-cdk
+# Paso 2: Deploy Frontend
+if [ "$1" == "frontend" ] || [ "$1" == "all" ] || [ -z "$1" ]; then
+    echo -e "${BLUE}[2/4]${NC} Desplegando Frontend..."
+    
+    # Configurar .env
+    echo "VITE_API_URL=$API_URL" > frontend/.env
+    
+    # Build
+    cd frontend
+    npm run build > /dev/null 2>&1
+    
+    # Upload a S3
+    aws s3 sync dist/ s3://$BUCKET_NAME/ --delete --quiet
+    echo -e "${GREEN}✅ Frontend desplegado${NC}"
+    cd ..
+    echo ""
+    
+    # Paso 3: Invalidar CloudFront
+    echo -e "${BLUE}[3/4]${NC} Invalidando caché de CloudFront..."
+    INVALIDATION_ID=$(aws cloudfront create-invalidation \
+        --distribution-id $DISTRIBUTION_ID \
+        --paths "/*" \
+        --query 'Invalidation.Id' \
+        --output text)
+    echo -e "${GREEN}✅ Invalidación creada: $INVALIDATION_ID${NC}"
+    echo ""
 fi
-echo -e "${GREEN}✅ CDK disponible${NC}"
-echo ""
 
-# Paso 3: Instalar dependencias del backend
-echo -e "${BLUE}[3/8]${NC} Instalando dependencias del backend..."
-cd backend
-npm install
-cd ..
-echo -e "${GREEN}✅ Backend listo${NC}"
-echo ""
-
-# Paso 4: Instalar dependencias de infrastructure
-echo -e "${BLUE}[4/8]${NC} Instalando dependencias de infrastructure..."
-cd infrastructure
-npm install
-cd ..
-echo -e "${GREEN}✅ Infrastructure lista${NC}"
-echo ""
-
-# Paso 5: Desplegar infraestructura con CDK
-echo -e "${BLUE}[5/8]${NC} Desplegando infraestructura en AWS..."
-cd infrastructure
-cdk deploy --require-approval never --outputs-file ../outputs.json
-cd ..
-echo -e "${GREEN}✅ Infraestructura desplegada${NC}"
-echo ""
-
-# Leer outputs
-API_URL=$(cat outputs.json | grep -o '"ApiURL": "[^"]*' | sed 's/"ApiURL": "//')
-BUCKET_NAME=$(cat outputs.json | grep -o '"BucketName": "[^"]*' | sed 's/"BucketName": "//')
-DISTRIBUTION_ID=$(cat outputs.json | grep -o '"DistributionId": "[^"]*' | sed 's/"DistributionId": "//')
-WEBSITE_URL=$(cat outputs.json | grep -o '"WebsiteURL": "[^"]*' | sed 's/"WebsiteURL": "//')
-
-# Paso 6: Configurar frontend
-echo -e "${BLUE}[6/8]${NC} Configurando frontend con API URL..."
-cd frontend
-cat > .env << EOF
-VITE_API_URL=${API_URL}
-EOF
-echo -e "${GREEN}✅ Frontend configurado${NC}"
-echo ""
-
-# Paso 7: Build y deploy del frontend
-echo -e "${BLUE}[7/8]${NC} Building frontend..."
-npm install
-npm run build
-echo -e "${GREEN}✅ Frontend built${NC}"
-echo ""
-
-echo -e "${BLUE}[8/8]${NC} Subiendo frontend a S3..."
-aws s3 sync dist/ s3://${BUCKET_NAME}/ --delete
-echo -e "${GREEN}✅ Frontend subido${NC}"
-echo ""
-
-# Invalidar CloudFront cache
-echo "🔄 Invalidando caché de CloudFront..."
-aws cloudfront create-invalidation \
-  --distribution-id ${DISTRIBUTION_ID} \
-  --paths "/*" > /dev/null 2>&1
-echo -e "${GREEN}✅ Caché invalidado${NC}"
-echo ""
-
-cd ..
+# Paso 4: Deploy Infrastructure (solo si hay cambios de CDK)
+if [ "$1" == "infra" ] || [ "$1" == "all" ]; then
+    echo -e "${BLUE}[4/4]${NC} Desplegando Infraestructura..."
+    cd infrastructure
+    npx cdk deploy --require-approval never --outputs-file ./outputs.json
+    echo -e "${GREEN}✅ Infraestructura desplegada${NC}"
+    cd ..
+    echo ""
+fi
 
 # Resumen
-echo ""
 echo "=========================================="
 echo -e "${GREEN}🎉 ¡Deployment completado!${NC}"
 echo "=========================================="
 echo ""
-echo -e "${BLUE}📊 Información del deployment:${NC}"
+echo -e "${BLUE}🌐 Website URL:${NC}"
+echo "   https://dzauji3zz7r1b.cloudfront.net"
 echo ""
-echo -e "🌐 Website URL:"
-echo -e "   ${GREEN}${WEBSITE_URL}${NC}"
+echo -e "${BLUE}🔌 API URL:${NC}"
+echo "   $API_URL"
 echo ""
-echo -e "🔌 API URL:"
-echo -e "   ${API_URL}"
-echo ""
-echo -e "📦 S3 Bucket:"
-echo -e "   ${BUCKET_NAME}"
-echo ""
-echo -e "☁️  CloudFront Distribution:"
-echo -e "   ${DISTRIBUTION_ID}"
+echo -e "${YELLOW}⚠️  Nota:${NC} CloudFront puede tardar 1-2 minutos en propagar cambios"
 echo ""
 echo "=========================================="
 echo ""
-echo -e "${YELLOW}⚠️  Nota:${NC} CloudFront puede tardar 5-10 minutos en propagar cambios"
+echo -e "${BLUE}Uso:${NC}"
+echo "  ./deploy.sh           # Deploy solo frontend"
+echo "  ./deploy.sh frontend  # Deploy solo frontend"
+echo "  ./deploy.sh backend   # Deploy solo backend"
+echo "  ./deploy.sh infra     # Deploy solo infrastructure"
+echo "  ./deploy.sh all       # Deploy todo"
 echo ""
-echo -e "${BLUE}Siguiente paso:${NC}"
-echo "  Abre ${WEBSITE_URL} en Chrome, Edge o Safari"
-echo ""
-echo -e "${BLUE}Ver logs:${NC}"
-echo "  aws logs tail /aws/lambda/MissiStack-MissiBackend --follow"
-echo ""
-echo "=========================================="
+

@@ -5,10 +5,7 @@ import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import * as codepipeline from 'aws-cdk-lib/aws-codepipeline';
-import * as codepipeline_actions from 'aws-cdk-lib/aws-codepipeline-actions';
-import * as codebuild from 'aws-cdk-lib/aws-codebuild';
-import * as codecommit from 'aws-cdk-lib/aws-codecommit';
+import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 
 export class MissiStack extends cdk.Stack {
   constructor(scope, id, props) {
@@ -71,7 +68,8 @@ export class MissiStack extends cdk.Stack {
     backendLambda.addToRolePolicy(new iam.PolicyStatement({
       actions: ['bedrock:InvokeModel'],
       resources: [
-        `arn:aws:bedrock:${this.region}::foundation-model/us.amazon.nova-lite-v1:0`
+        `arn:aws:bedrock:${this.region}::foundation-model/amazon.nova-lite-v1:0`,
+        `arn:aws:bedrock:*::foundation-model/*`
       ]
     }));
 
@@ -93,177 +91,6 @@ export class MissiStack extends cdk.Stack {
     // Recurso /chat
     const chatResource = api.root.addResource('chat');
     chatResource.addMethod('POST', new apigateway.LambdaIntegration(backendLambda));
-
-    // ====================
-    // CI/CD PIPELINE (CodeCommit + CodePipeline + CodeBuild)
-    // ====================
-
-    // CodeCommit Repository
-    const repository = new codecommit.Repository(this, 'MissiRepository', {
-      repositoryName: 'missi',
-      description: 'Repositorio de Missi - Enfermera Virtual'
-    });
-
-    // Artifact Buckets
-    const sourceOutput = new codepipeline.Artifact('SourceOutput');
-    const buildOutput = new codepipeline.Artifact('BuildOutput');
-
-    // CodeBuild Project para Frontend
-    const frontendBuild = new codebuild.PipelineProject(this, 'MissiFrontendBuild', {
-      buildSpec: codebuild.BuildSpec.fromObject({
-        version: '0.2',
-        phases: {
-          install: {
-            'runtime-versions': {
-              nodejs: 20
-            },
-            commands: [
-              'echo "Installing frontend dependencies..."',
-              'cd frontend',
-              'npm install'
-            ]
-          },
-          pre_build: {
-            commands: [
-              'echo "Creating .env file..."',
-              `echo "VITE_API_URL=${api.url}" > .env`
-            ]
-          },
-          build: {
-            commands: [
-              'echo "Building frontend..."',
-              'npm run build',
-              'echo "Build completed"'
-            ]
-          }
-        },
-        artifacts: {
-          'base-directory': 'frontend/dist',
-          files: ['**/*']
-        }
-      }),
-      environment: {
-        buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
-        computeType: codebuild.ComputeType.SMALL
-      }
-    });
-
-    // CodeBuild Project para Backend
-    const backendBuild = new codebuild.PipelineProject(this, 'MissiBackendBuild', {
-      buildSpec: codebuild.BuildSpec.fromObject({
-        version: '0.2',
-        phases: {
-          install: {
-            'runtime-versions': {
-              nodejs: 20
-            },
-            commands: [
-              'echo "Installing backend dependencies..."',
-              'cd backend',
-              'npm install'
-            ]
-          },
-          build: {
-            commands: [
-              'echo "Backend build completed (no compilation needed)"'
-            ]
-          }
-        },
-        artifacts: {
-          'base-directory': 'backend',
-          files: ['src/**/*', 'package.json']
-        }
-      }),
-      environment: {
-        buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
-        computeType: codebuild.ComputeType.SMALL
-      }
-    });
-
-    // Pipeline
-    const pipeline = new codepipeline.Pipeline(this, 'MissiPipeline', {
-      pipelineName: 'MissiDeploymentPipeline',
-      restartExecutionOnUpdate: true
-    });
-
-    // Stage 1: Source
-    pipeline.addStage({
-      stageName: 'Source',
-      actions: [
-        new codepipeline_actions.CodeCommitSourceAction({
-          actionName: 'CodeCommit_Source',
-          repository: repository,
-          branch: 'main',
-          output: sourceOutput
-        })
-      ]
-    });
-
-    // Stage 2: Build
-    pipeline.addStage({
-      stageName: 'Build',
-      actions: [
-        new codepipeline_actions.CodeBuildAction({
-          actionName: 'Frontend_Build',
-          project: frontendBuild,
-          input: sourceOutput,
-          outputs: [buildOutput]
-        }),
-        new codepipeline_actions.CodeBuildAction({
-          actionName: 'Backend_Build',
-          project: backendBuild,
-          input: sourceOutput
-        })
-      ]
-    });
-
-    // Stage 3: Deploy Frontend
-    pipeline.addStage({
-      stageName: 'DeployFrontend',
-      actions: [
-        new codepipeline_actions.S3DeployAction({
-          actionName: 'S3_Deploy',
-          bucket: websiteBucket,
-          input: buildOutput,
-          runOrder: 1
-        }),
-        new codepipeline_actions.LambdaInvokeAction({
-          actionName: 'InvalidateCloudFront',
-          lambda: new lambda.Function(this, 'InvalidateCF', {
-            runtime: lambda.Runtime.NODEJS_20_X,
-            handler: 'index.handler',
-            code: lambda.Code.fromInline(`
-              const { CloudFrontClient, CreateInvalidationCommand } = require('@aws-sdk/client-cloudfront');
-              const client = new CloudFrontClient();
-              
-              exports.handler = async (event) => {
-                const command = new CreateInvalidationCommand({
-                  DistributionId: '${distribution.distributionId}',
-                  InvalidationBatch: {
-                    CallerReference: Date.now().toString(),
-                    Paths: {
-                      Quantity: 1,
-                      Items: ['/*']
-                    }
-                  }
-                });
-                
-                await client.send(command);
-                return { statusCode: 200, body: 'Invalidation created' };
-              };
-            `),
-            timeout: cdk.Duration.minutes(1),
-            initialPolicy: [
-              new iam.PolicyStatement({
-                actions: ['cloudfront:CreateInvalidation'],
-                resources: [`arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`]
-              })
-            ]
-          }),
-          runOrder: 2
-        })
-      ]
-    });
 
     // ====================
     // OUTPUTS
@@ -291,18 +118,6 @@ export class MissiStack extends cdk.Stack {
       value: distribution.distributionId,
       description: 'ID de CloudFront Distribution',
       exportName: 'MissiDistributionId'
-    });
-
-    new cdk.CfnOutput(this, 'RepositoryCloneUrlHttp', {
-      value: repository.repositoryCloneUrlHttp,
-      description: 'URL HTTP para clonar el repositorio',
-      exportName: 'MissiRepositoryUrl'
-    });
-
-    new cdk.CfnOutput(this, 'PipelineConsoleUrl', {
-      value: `https://console.aws.amazon.com/codesuite/codepipeline/pipelines/${pipeline.pipelineName}/view`,
-      description: 'URL de la consola del pipeline',
-      exportName: 'MissiPipelineUrl'
     });
   }
 }

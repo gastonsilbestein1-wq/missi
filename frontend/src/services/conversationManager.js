@@ -77,8 +77,8 @@ class ConversationManager {
         return;
       }
 
-      // Envía al backend
-      if (this.estado === ESTADOS.DIAGNOSTICANDO || this.estado === ESTADOS.LEYENDO_SENSORES) {
+      // Envía al backend (solo durante diagnóstico)
+      if (this.estado === ESTADOS.DIAGNOSTICANDO) {
         this.preguntaNumero++;
         
         const respuesta = await this.apiService.enviarMensaje(
@@ -95,6 +95,7 @@ class ConversationManager {
           if (this.preguntaNumero >= 6) {
             this.estado = ESTADOS.FINALIZANDO;
             this.setEstado('FINALIZADO');
+            this.speechService.detener();
             // Opcional: reiniciar después de 10 seg
             setTimeout(() => {
               this.reiniciar();
@@ -104,10 +105,6 @@ class ConversationManager {
             this.speechService.reanudarEscucha();
           }
         });
-
-        if (this.estado === ESTADOS.LEYENDO_SENSORES) {
-          this.estado = ESTADOS.DIAGNOSTICANDO;
-        }
       }
     } catch (error) {
       console.error('Error procesando mensaje:', error);
@@ -124,21 +121,56 @@ class ConversationManager {
     }
   }
 
-  leerSensores() {
-    const texto = `
+  async leerSensores() {
+    const textoSensores = `
       Tu temperatura es ${this.sensores.temperatura} grados,
       tu ritmo cardíaco ${this.sensores.ritmoCardiaco} latidos por minuto,
       tu oxígeno en sangre ${this.sensores.oxigeno} por ciento,
       y tu presión ${this.sensores.presion.sistolica} sobre ${this.sensores.presion.diastolica}.
     `.trim();
     
-    this.historial.push({ rol: 'missi', texto });
+    this.historial.push({ rol: 'missi', texto: textoSensores });
     
+    // Lee los sensores al usuario
     this.setEstado('HABLANDO');
-    this.speechService.hablar(texto, () => {
-      this.setEstado('ESCUCHANDO');
-      this.speechService.reanudarEscucha();
+    await new Promise(resolve => {
+      this.speechService.hablar(textoSensores, resolve);
     });
+    
+    // Obtén la primera pregunta diagnóstica del backend
+    try {
+      this.preguntaNumero++;
+      this.estado = ESTADOS.DIAGNOSTICANDO;
+      
+      // Obtiene el primer mensaje del usuario del historial
+      const primerMensajeUsuario = this.historial.find(h => h.rol === 'usuario')?.texto || '';
+      
+      const respuesta = await this.apiService.enviarMensaje(
+        primerMensajeUsuario,
+        this.sensores,
+        this.historial,
+        this.preguntaNumero
+      );
+      
+      this.historial.push({ rol: 'missi', texto: respuesta });
+      
+      // Hace la primera pregunta
+      this.setEstado('HABLANDO');
+      this.speechService.hablar(respuesta, () => {
+        this.setEstado('ESCUCHANDO');
+        this.speechService.reanudarEscucha();
+      });
+    } catch (error) {
+      console.error('Error obteniendo primera pregunta:', error);
+      this.setEstado('HABLANDO');
+      this.speechService.hablar(
+        'Perdí la conexión. Intentá de nuevo en unos segundos',
+        () => {
+          this.setEstado('ESCUCHANDO');
+          this.speechService.reanudarEscucha();
+        }
+      );
+    }
   }
 
   reiniciar() {

@@ -26,60 +26,94 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 60px;
+  gap: 0; /* Sin espacio entre ojos y boca */
 }
 
 .ojos {
   display: flex;
-  gap: 80px;
+  gap: 320px; /* Doble otra vez: antes 160px */
+  position: relative;
+  z-index: 2; /* Ojos al frente */
+  transform: translateY(65px); /* Bajar 65px (15px + 50px) */
 }
 
 .ojo {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: #87CEEB;
+  width: 192px; /* 20% menos: 240px * 0.8 = 192px */
+  height: 256px; /* 20% menos: 320px * 0.8 = 256px */
+  border-radius: 96px / 128px; /* Ovalado vertical */
+  background: #1E90FF; /* Mismo color que boca */
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .ojo.cerrado {
-  height: 8px;
-  border-radius: 4px;
+  height: 26px; /* 20% menos: 32px * 0.8 = 25.6px ≈ 26px */
+  border-radius: 13px;
   background: #1E90FF;
 }
 
 .ojo.triste {
-  background: #B0C4DE;
+  background: #1E90FF;
+}
+
+.boca-container {
+  position: relative;
+  transform-origin: center 60%; /* Origen en donde empieza el arco visible */
+}
+
+.boca-container.hablando {
+  animation: hablar 0.15s ease-in-out infinite alternate;
 }
 
 .boca {
-  width: 100px;
-  height: 50px;
-  border-bottom: 4px solid #1E90FF;
-  border-radius: 0 0 50px 50px;
-  transition: transform 0.1s ease;
+  width: 500px; /* Aumentado de 400px a 500px */
+  height: 500px; /* Mismo diámetro */
+  background: transparent;
+  border: 40px solid #1E90FF;
+  border-radius: 50%; /* Círculo perfecto */
+  /* Mostrar 40% inferior = ocultar 60% superior */
+  clip-path: inset(60% 0 0 0); /* Corta 60% desde arriba (antes 70%) */
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1; /* Boca atrás de los ojos */
+  transform: translateY(-80px); /* Subir 80px (30px + 50px) */
+}
+
+/* Puntas redondeadas como elementos separados (100% visibles) */
+.boca-punta-izq,
+.boca-punta-der {
+  position: absolute;
+  width: 40.5px; /* Aumentado 0.5px (antes 40px) */
+  height: 40.5px; /* Aumentado 0.5px (antes 40px) */
+  background: #1E90FF;
+  border-radius: 50%;
+  z-index: 10; /* Muy adelante */
+  top: calc(60% - 20px - 80px); /* Ajustado por el translateY de .boca */
+}
+
+.boca-punta-izq {
+  left: 5.25px; /* Movido 0.5px a la derecha (antes 4.75px, ahora 5.25px) */
+}
+
+.boca-punta-der {
+  right: 5.75px; /* Alejado 0.75px (antes 6.5px, ahora 5.75px) */
 }
 
 .boca.hablando {
-  animation: hablar 0.3s infinite alternate;
+  /* Animación ahora en .boca-container, no aquí */
 }
 
 .boca.triste {
-  border-bottom: none;
-  border-top: 4px solid #1E90FF;
-  border-radius: 50px 50px 0 0;
-  transform: translateY(-20px);
+  transform: translateY(-40px) rotate(180deg);
 }
 
 @keyframes hablar {
   0% { 
-    transform: scaleY(0.8);
-  }
-  50% { 
-    transform: scaleY(1.2);
+    /* Sonrisa normal */
+    transform: scaleY(1);
   }
   100% { 
-    transform: scaleY(0.8);
+    /* Boca achatada (línea horizontal) */
+    transform: scaleY(0.2);
   }
 }
 
@@ -95,23 +129,58 @@ body {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .missi-face {
+    gap: 200px;
+  }
+
   .ojos {
-    gap: 60px;
+    gap: 240px;
   }
   
   .ojo {
-    width: 60px;
-    height: 60px;
+    width: 144px; /* 20% menos de 180px */
+    height: 192px; /* 20% menos de 240px */
+    border-radius: 72px / 96px;
   }
   
   .ojo.cerrado {
-    height: 6px;
+    height: 19px;
+    border-radius: 10px;
   }
   
   .boca {
-    width: 75px;
-    height: 40px;
-    border-bottom-width: 3px;
+    width: 600px;
+    height: 600px;
+    border-width: 30px;
+    clip-path: inset(70% 0 0 0);
+  }
+
+  .boca::before,
+  .boca::after {
+    width: 30px;
+    height: 30px;
+    top: -15px;
+  }
+
+  .boca::before {
+    left: -15px;
+  }
+
+  .boca::after {
+    right: -15px;
+  }
+
+  .boca.triste {
+    transform: translateY(-30px) rotate(180deg);
+  }
+
+  @keyframes hablar {
+    0% { 
+      transform: translateY(0);
+    }
+    100% { 
+      transform: translateY(6px);
+    }
   }
 
   .error-message {
@@ -122,25 +191,57 @@ body {
 
 @media (max-width: 480px) {
   .missi-face {
-    gap: 40px;
+    gap: 160px;
   }
 
   .ojos {
-    gap: 50px;
+    gap: 200px;
   }
   
   .ojo {
-    width: 50px;
-    height: 50px;
+    width: 120px; /* 20% menos de 150px */
+    height: 160px; /* 20% menos de 200px */
+    border-radius: 60px / 80px;
   }
   
   .ojo.cerrado {
-    height: 5px;
+    height: 16px;
+    border-radius: 8px;
   }
   
   .boca {
-    width: 60px;
-    height: 30px;
+    width: 500px;
+    height: 500px;
+    border-width: 25px;
+    clip-path: inset(70% 0 0 0);
+  }
+
+  .boca::before,
+  .boca::after {
+    width: 25px;
+    height: 25px;
+    top: -12.5px;
+  }
+
+  .boca::before {
+    left: -12.5px;
+  }
+
+  .boca::after {
+    right: -12.5px;
+  }
+
+  .boca.triste {
+    transform: translateY(-25px) rotate(180deg);
+  }
+
+  @keyframes hablar {
+    0% { 
+      transform: translateY(0);
+    }
+    100% { 
+      transform: translateY(5px);
+    }
   }
 
   .error-message {
