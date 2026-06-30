@@ -15,10 +15,10 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuración
-API_URL="https://hfhgnw26t1.execute-api.us-east-1.amazonaws.com/prod/"
-BUCKET_NAME="missistack-missifrontend081edd7f-sqglaufxsx4u"
-DISTRIBUTION_ID="E17MSYUHBCY3OL"
-LAMBDA_NAME="MissiStack-MissiBackend91814226-LcbOaNw7a7Xt"
+API_URL="https://iu1da7t3rl.execute-api.us-east-1.amazonaws.com/prod/"
+BUCKET_NAME="missistack-missifrontend081edd7f-xfxgrpcd1nau"
+DISTRIBUTION_ID="E2Q8UMVZ2X9CXK"
+LAMBDA_NAME=$(aws lambda list-functions --query "Functions[?starts_with(FunctionName, 'MissiStack-MissiBackend')].FunctionName" --output text)
 
 # Paso 1: Deploy Backend (si hay cambios)
 if [ "$1" == "backend" ] || [ "$1" == "all" ]; then
@@ -79,7 +79,7 @@ echo -e "${GREEN}🎉 ¡Deployment completado!${NC}"
 echo "=========================================="
 echo ""
 echo -e "${BLUE}🌐 Website URL:${NC}"
-echo "   https://dzauji3zz7r1b.cloudfront.net"
+echo "   https://d1xdn827gmq2ao.cloudfront.net"
 echo ""
 echo -e "${BLUE}🔌 API URL:${NC}"
 echo "   $API_URL"
